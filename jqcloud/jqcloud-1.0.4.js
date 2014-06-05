@@ -7,11 +7,24 @@
  * Licensed under the MIT license.
  *
  * Date: 2013-05-09 18:54:22 +0200
+ 
+ * Propuesta de version 1.0.5
+ * Desarrollador: Jorge Antonio Gómez Colombat
+ * Fecha: 2014-05-22 17:29:30 -0500 
+ * Modificaciones hechas para lograr el mismo comporatmiento del plugin y agregarle la posibilidad
+ * de instanciarlo sin la lista de palabras y luego pasarle la lista a un metodo que se encargue 
+ * solo de dibujar la nube de palabras, para ello se incorporaron 2 funciones drawIn (privada) y 
+ * draw (publica), la primera pinta la lista si se pasa esta en la instanciación y la segunda es
+ * para cuando no se haya pasado la lista en la instanciación se invoque el método de pintar la nube
+ * a partir de la nueva lista suministrada
+ * Se cambió la asignación por defecto de la opción delayedMode, ya que ahora puede pasarse o no la lista
+ * en la instanciación, se le adicionó el parámetro word_array (la lista) al método drawWordCloud y se
+ * comentó la función que se invocaba por defecto y el retorno.      
 */
 
 (function( $ ) {
   "use strict";
-  $.fn.jQCloud = function(word_array, options) {
+  $.fn.jQCloud = function(word_array,options) {
     // Reference to the container element
     var $this = this;
     // Namespace word ids to avoid collisions between multiple clouds
@@ -25,14 +38,14 @@
         x: ((options && options.width) ? options.width : $this.width()) / 2.0,
         y: ((options && options.height) ? options.height : $this.height()) / 2.0
       },
-      delayedMode: word_array.length > 50,
+      delayedMode: true, //delayedMode: word_array.length > 50,
       shape: false, // It defaults to elliptic shape
       encodeURI: true,
       removeOverflowing: true
     };
-
+    
     options = $.extend(default_options, options || {});
-
+    console.log($this.css("width"),options.height);
     // Add the "jqcloud" class to the container for easy CSS styling, set container width/height
     $this.addClass("jqcloud").width(options.width).height(options.height);
 
@@ -41,7 +54,7 @@
       $this.css("position", "relative");
     }
 
-    var drawWordCloud = function() {
+    var drawWordCloud = function(word_array) {
       // Helper function to test if an element overlaps others
       var hitTest = function(elem, other_elems) {
         // Pairwise overlap detection
@@ -226,7 +239,33 @@
     };
 
     // Delay execution so that the browser can render the page before the computatively intensive word cloud drawing
-    setTimeout(function(){drawWordCloud();}, 10);
-    return $this;
+    //setTimeout(function(){drawWordCloud();}, 10);
+
+    //return $this;
+    
+    // Ahora se retorna una función wrapper que invoca a la drawWordCloud 
+    // pasandole como parámetro la lista de palabras lo que posibilita 
+    // instanciar el objeto y en otro momento y lugar mandarlo a dibujar las palabras 
+    
+    var drawIn = function (word_array){
+      if(word_array){
+    	    if(word_array.length>50){
+		        options.delayedMode=true;
+		        setTimeout(function(){drawWordCloud(word_array);}, 10);
+	        }
+	        else if(word_array.length>0 && word_array.length<50){
+		         options.delayedMode=false;
+	    	    setTimeout(function(){drawWordCloud(word_array);}, 10);
+	        }
+      } 
+    }
+
+    drawIn(word_array);    
+    
+    return {
+	    draw: function(word_array) {
+          drawIn(word_array);
+	    }
+    }	
   };
 })(jQuery);
